@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import type { TimerMode, TimerSettings } from '../types';
 import { DEFAULT_SETTINGS } from '../types';
 import { playChime, playWorkEnd, playStart, playPause } from '../utils/sound';
-import { loadFromStorage, saveToStorage } from '../utils/storage';
 
 interface UseTimerReturn {
   mode: TimerMode;
@@ -25,10 +24,14 @@ export function useTimer(): UseTimerReturn {
   const [isRunning, setIsRunning] = useState(false);
   const [sessions, setSessions] = useState(0);
   const [resetCount, setResetCount] = useState(0);
-  const [settings, setSettings] = useState<TimerSettings>(() => ({
-    ...DEFAULT_SETTINGS,
-    ...loadFromStorage<Partial<TimerSettings>>('pomodoro-settings', {}),
-  }));
+  const [settings, setSettings] = useState<TimerSettings>(() => {
+    try {
+      const saved = localStorage.getItem('pomodoro-settings');
+      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionsRef = useRef(sessions);
@@ -97,6 +100,7 @@ export function useTimer(): UseTimerReturn {
   // Countdown effect
   useEffect(() => {
     if (!isRunning) {
+      clearTimer();
       return;
     }
 
@@ -124,7 +128,7 @@ export function useTimer(): UseTimerReturn {
 
   const updateSettings = useCallback((s: TimerSettings) => {
     setSettings(s);
-    saveToStorage('pomodoro-settings', s);
+    localStorage.setItem('pomodoro-settings', JSON.stringify(s));
   }, []);
 
   // Track previous mode/settings to only reset when they actually change

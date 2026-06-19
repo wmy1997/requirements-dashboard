@@ -7,94 +7,133 @@ function getAudioContext(): AudioContext {
   return audioCtx;
 }
 
-interface NoteOptions {
-  type?: OscillatorType;
-  peakGain?: number;
-  attackTime?: number;
-  totalTime?: number;
-}
-
-function playNote(
-  ctx: AudioContext,
-  now: number,
-  frequency: number,
-  offset: number,
-  options: NoteOptions = {},
-): void {
-  const {
-    type = 'sine',
-    peakGain = 0.2,
-    attackTime = 0.02,
-    totalTime = 0.15,
-  } = options;
-
-  const osc = ctx.createOscillator();
-  const gain = ctx.createGain();
-
-  osc.type = type;
-  osc.frequency.setValueAtTime(frequency, now + offset);
-  gain.gain.setValueAtTime(0, now + offset);
-  gain.gain.linearRampToValueAtTime(peakGain, now + offset + attackTime);
-  gain.gain.linearRampToValueAtTime(0, now + offset + totalTime);
-
-  osc.connect(gain);
-  gain.connect(ctx.destination);
-  osc.start(now + offset);
-  osc.stop(now + offset + totalTime);
-}
-
-function safePlay(fn: () => void): void {
+export function playClick(): void {
   try {
-    fn();
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, now);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.linearRampToValueAtTime(0, now + 0.08);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.08);
+  } catch {
+    // Silently fail
+  }
+}
+
+export function playStart(): void {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    // Rising two-note: A4 → C5
+    [440, 523.25].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.1);
+      gain.gain.setValueAtTime(0, now + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.15);
+    });
+  } catch {
+    // Silently fail
+  }
+}
+
+export function playPause(): void {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+    // Descending two-note: C5 → A4
+    [523.25, 440].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.1);
+      gain.gain.setValueAtTime(0, now + i * 0.1);
+      gain.gain.linearRampToValueAtTime(0.2, now + i * 0.1 + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + i * 0.1 + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * 0.1);
+      osc.stop(now + i * 0.1 + 0.15);
+    });
+  } catch {
+    // Silently fail
+  }
+}
+
+export function playChime(): void {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+
+    // Play a pleasant three-note chime: C5 → E5 → G5
+    const frequencies = [523.25, 659.25, 783.99];
+    const duration = 0.2;
+    const gap = 0.12;
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * gap);
+
+      gain.gain.setValueAtTime(0, now + i * gap);
+      gain.gain.linearRampToValueAtTime(0.3, now + i * gap + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + i * gap + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + i * gap);
+      osc.stop(now + i * gap + duration);
+    });
   } catch {
     // Silently fail if Audio API is unavailable
   }
 }
 
-export function playStart(): void {
-  safePlay(() => {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
-    // Rising two-note: A4 → C5
-    playNote(ctx, now, 440, 0);
-    playNote(ctx, now, 523.25, 0.1);
-  });
-}
-
-export function playPause(): void {
-  safePlay(() => {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
-    // Descending two-note: C5 → A4
-    playNote(ctx, now, 523.25, 0);
-    playNote(ctx, now, 440, 0.1);
-  });
-}
-
-export function playChime(): void {
-  safePlay(() => {
-    const ctx = getAudioContext();
-    const now = ctx.currentTime;
-    // Pleasant three-note chime: C5 → E5 → G5
-    [523.25, 659.25, 783.99].forEach((freq, i) =>
-      playNote(ctx, now, freq, i * 0.12, { peakGain: 0.3, totalTime: 0.2 }),
-    );
-  });
-}
-
 export function playWorkEnd(): void {
-  safePlay(() => {
+  try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
-    // Ascending arpeggio: G4 → C5 → E5 → G5 → C6
+
+    // More energetic: ascending arpeggio
     const frequencies = [392, 523.25, 659.25, 783.99, 1046.5];
-    frequencies.forEach((freq, i) =>
-      playNote(ctx, now, freq, i * 0.08, {
-        type: 'triangle',
-        peakGain: 0.3,
-        attackTime: 0.01,
-        totalTime: 0.15,
-      }),
-    );
-  });
+    const duration = 0.15;
+    const gap = 0.08;
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, now + i * gap);
+
+      gain.gain.setValueAtTime(0, now + i * gap);
+      gain.gain.linearRampToValueAtTime(0.3, now + i * gap + 0.01);
+      gain.gain.linearRampToValueAtTime(0, now + i * gap + duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now + i * gap);
+      osc.stop(now + i * gap + duration);
+    });
+  } catch {
+    // Silently fail if Audio API is unavailable
+  }
 }

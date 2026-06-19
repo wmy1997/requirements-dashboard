@@ -14,7 +14,7 @@ export function Settings({ settings, onUpdate, isOpen, onClose }: SettingsProps)
 
   useEffect(() => {
     setDraft(settings);
-  }, [settings]);
+  }, [settings, isOpen]);
 
   if (!isOpen) return null;
 

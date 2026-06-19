@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { TimerMode } from '../types';
 import './TimerRing.css';
 
@@ -16,6 +17,15 @@ function formatTime(seconds: number): string {
 }
 
 export function TimerRing({ remaining, totalDuration, mode, isRunning, resetCount }: TimerRingProps) {
+  const [animate, setAnimate] = useState(true);
+
+  useEffect(() => {
+    // When reset is triggered, briefly disable transition so the ring jumps instantly
+    setAnimate(false);
+    const id = setTimeout(() => setAnimate(true), 50);
+    return () => clearTimeout(id);
+  }, [resetCount]);
+
   const radius = 140;
   const strokeWidth = 8;
   const normalizedRadius = radius - strokeWidth / 2;
@@ -39,9 +49,8 @@ export function TimerRing({ remaining, totalDuration, mode, isRunning, resetCoun
           cx={radius}
           cy={radius}
         />
-        {/* Progress circle — key prop on resetCount makes React remount it, skipping transition */}
+        {/* Progress circle */}
         <circle
-          key={resetCount}
           className="timer-ring__progress"
           stroke="var(--ring-color)"
           fill="transparent"
@@ -53,7 +62,7 @@ export function TimerRing({ remaining, totalDuration, mode, isRunning, resetCoun
           cx={radius}
           cy={radius}
           style={{
-            transition: 'stroke-dashoffset 0.95s linear',
+            transition: animate ? 'stroke-dashoffset 0.95s linear' : 'none',
           }}
         />
       </svg>
