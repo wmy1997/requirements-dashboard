@@ -1,0 +1,40 @@
+.timer-ring {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.timer-ring svg {
+  transform: rotate(-90deg);
+}
+
+.timer-ring__progress {
+  transition: stroke-dashoffset 0.95s linear;
+}
+
+.timer-ring--work {
+  --ring-color: var(--color-work);
+}
+
+.timer-ring--shortBreak {
+  --ring-color: var(--color-short-break);
+}
+
+.timer-ring--longBreak {
+  --ring-color: var(--color-long-break);
+}
+
+.timer-ring--paused {
+  --ring-color: var(--color-ready);
+}
+
+.timer-ring__time {
+  position: absolute;
+  font-size: 5.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+  user-select: none;
+}
